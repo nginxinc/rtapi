@@ -1,0 +1,90 @@
+# github.com/ajstarks/svgo v0.0.0-20180226025133-644b8db467af
+github.com/ajstarks/svgo
+# github.com/cpuguy83/go-md2man/v2 v2.0.0-20190314233015-f79a8a8ca69d
+github.com/cpuguy83/go-md2man/v2/md2man
+# github.com/fogleman/gg v1.3.0
+github.com/fogleman/gg
+# github.com/gobuffalo/envy v1.7.1
+github.com/gobuffalo/envy
+# github.com/gobuffalo/logger v1.0.1
+github.com/gobuffalo/logger
+# github.com/gobuffalo/packd v0.3.0
+github.com/gobuffalo/packd
+github.com/gobuffalo/packd/internal/takeon/github.com/markbates/errx
+# github.com/gobuffalo/packr/v2 v2.7.1
+github.com/gobuffalo/packr/v2
+github.com/gobuffalo/packr/v2/file
+github.com/gobuffalo/packr/v2/file/resolver
+github.com/gobuffalo/packr/v2/file/resolver/encoding/hex
+github.com/gobuffalo/packr/v2/internal/takeon/github.com/karrick/godirwalk
+github.com/gobuffalo/packr/v2/internal/takeon/github.com/markbates/errx
+github.com/gobuffalo/packr/v2/internal/takeon/github.com/markbates/oncer
+github.com/gobuffalo/packr/v2/internal/takeon/github.com/markbates/safe
+github.com/gobuffalo/packr/v2/jam/parser
+github.com/gobuffalo/packr/v2/plog
+# github.com/golang/freetype v0.0.0-20170609003504-e2365dfdc4a0
+github.com/golang/freetype/raster
+github.com/golang/freetype/truetype
+# github.com/influxdata/tdigest v0.0.1
+github.com/influxdata/tdigest
+# github.com/joho/godotenv v1.3.0
+github.com/joho/godotenv
+# github.com/jung-kurt/gofpdf v1.16.2
+github.com/jung-kurt/gofpdf
+# github.com/konsorten/go-windows-terminal-sequences v1.0.2
+github.com/konsorten/go-windows-terminal-sequences
+# github.com/mailru/easyjson v0.7.0
+github.com/mailru/easyjson/buffer
+github.com/mailru/easyjson/jlexer
+github.com/mailru/easyjson/jwriter
+# github.com/rogpeppe/go-internal v1.4.0
+github.com/rogpeppe/go-internal/modfile
+github.com/rogpeppe/go-internal/module
+github.com/rogpeppe/go-internal/semver
+# github.com/russross/blackfriday/v2 v2.0.1
+github.com/russross/blackfriday/v2
+# github.com/shurcooL/sanitized_anchor_name v1.0.0
+github.com/shurcooL/sanitized_anchor_name
+# github.com/sirupsen/logrus v1.4.2
+github.com/sirupsen/logrus
+# github.com/tsenart/vegeta v12.7.0+incompatible
+github.com/tsenart/vegeta/lib
+# github.com/urfave/cli/v2 v2.1.1
+github.com/urfave/cli/v2
+# golang.org/x/crypto v0.0.0-20191011191535-87dc89f01550
+golang.org/x/crypto/ssh/terminal
+# golang.org/x/image v0.0.0-20190910094157-69e4b8554b2a
+golang.org/x/image/ccitt
+golang.org/x/image/draw
+golang.org/x/image/font
+golang.org/x/image/font/basicfont
+golang.org/x/image/math/f64
+golang.org/x/image/math/fixed
+golang.org/x/image/tiff
+golang.org/x/image/tiff/lzw
+# golang.org/x/net v0.0.0-20190620200207-3b0461eec859
+golang.org/x/net/http/httpguts
+golang.org/x/net/http2
+golang.org/x/net/http2/hpack
+golang.org/x/net/idna
+# golang.org/x/sys v0.0.0-20190515120540-06a5c4944438
+golang.org/x/sys/unix
+golang.org/x/sys/windows
+# golang.org/x/text v0.3.0
+golang.org/x/text/secure/bidirule
+golang.org/x/text/transform
+golang.org/x/text/unicode/bidi
+golang.org/x/text/unicode/norm
+# gonum.org/v1/plot v0.0.0-20200111075622-4abb28f724d5
+gonum.org/v1/plot
+gonum.org/v1/plot/palette
+gonum.org/v1/plot/plotter
+gonum.org/v1/plot/plotutil
+gonum.org/v1/plot/tools/bezier
+gonum.org/v1/plot/vg
+gonum.org/v1/plot/vg/draw
+gonum.org/v1/plot/vg/fonts
+gonum.org/v1/plot/vg/vgeps
+gonum.org/v1/plot/vg/vgimg
+gonum.org/v1/plot/vg/vgpdf
+gonum.org/v1/plot/vg/vgsvg
