@@ -63,13 +63,15 @@ func main() {
 
 	app := &cli.App{
 		Name:    "Real time API latency analyzer",
-		Version: "v0.0.1",
+		Version: "v0.1.0",
 		Usage:   "Create a PDF report and HDR histogram of Your APIs",
 		Flags:   flags,
 		Action: func(c *cli.Context) error {
 			// Check if there's any input data
 			var endpointList []endpointDetails
-			if c.IsSet("file") && c.IsSet("data") {
+			if !c.IsSet("file") && !c.IsSet("data") {
+				log.Fatal("No data found")
+			} else if c.IsSet("file") && c.IsSet("data") {
 				log.Fatal("Please only use either file or data as your input source")
 			} else if !c.IsSet("output") {
 				log.Fatal("You did not specify any output file name")
@@ -77,8 +79,6 @@ func main() {
 				endpointList = parseJSON(c.String("file"))
 			} else if c.IsSet("data") {
 				endpointList = parseJSONString(c.String("data"))
-			} else {
-				log.Fatal("No data found")
 			}
 			// Query each endpoint specified
 			for i := range endpointList {
@@ -100,7 +100,7 @@ func main() {
 func parseJSON(file string) []endpointDetails {
 	jsonFile, err := os.Open(file)
 	if err != nil {
-		panic(err)
+		log.Fatal(err)
 	}
 	defer jsonFile.Close()
 
@@ -186,6 +186,9 @@ func createGraph(endpoints []endpointDetails) *bytes.Buffer {
 			values := strings.Fields(stringArray[i][j])
 			if len(values) == 4 {
 				x, err := strconv.ParseFloat(values[3], 64)
+				if err != nil {
+					log.Fatal(err)
+				}
 				y, err := strconv.ParseFloat(values[0], 64)
 				if err != nil {
 					log.Fatal(err)
@@ -220,9 +223,6 @@ func createGraph(endpoints []endpointDetails) *bytes.Buffer {
 		if err != nil {
 			panic(err)
 		}
-	}
-	if err != nil {
-		panic(err)
 	}
 	buffer := new(bytes.Buffer)
 	wrt, err := p.WriterTo(25*vg.Centimeter, 25*vg.Centimeter, "png")
