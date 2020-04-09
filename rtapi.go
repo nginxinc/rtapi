@@ -3,14 +3,6 @@ package main
 import (
 	"bytes"
 	"encoding/json"
-	"io/ioutil"
-	"log"
-	"net/http"
-	"os"
-	"strconv"
-	"strings"
-	"time"
-
 	"github.com/gobuffalo/packr/v2"
 	"github.com/jung-kurt/gofpdf"
 	"github.com/tsenart/vegeta/lib"
@@ -19,27 +11,36 @@ import (
 	"gonum.org/v1/plot/plotter"
 	"gonum.org/v1/plot/plotutil"
 	"gonum.org/v1/plot/vg"
+	"gopkg.in/yaml.v3"
+	"io/ioutil"
+	"log"
+	"net/http"
+	"os"
+	"path/filepath"
+	"strconv"
+	"strings"
+	"time"
 )
 
 type endpointDetails struct {
-	Target       endpointTarget `json:"target"`
-	Query        endpointQuery  `json:"query_parameters"`
+	Target       endpointTarget `json:"target" yaml:"target"`
+	Query        endpointQuery  `json:"query_parameters" yaml:"query_parameters"`
 	hdrhistogram string
 }
 
 type endpointTarget struct {
-	Method string      `json:"method"`
-	URL    string      `json:"url"`
-	Body   string      `json:"body"`
-	Header http.Header `json:"header"`
+	Method string      `json:"method" yaml:"method"`
+	URL    string      `json:"url" yaml:"url"`
+	Body   string      `json:"body" yaml:"body"`
+	Header http.Header `json:"header" yaml:"header"`
 }
 
 type endpointQuery struct {
-	Threads     uint64        `json:"threads"`
-	MaxThreads  uint64        `json:"max_threads"`
-	Connections int           `json:"connections"`
-	Duration    time.Duration `json:"duration"`
-	RequestRate int           `json:"request_rate"`
+	Threads     uint64 `json:"threads" yaml:"threads"`
+	MaxThreads  uint64 `json:"max_threads" yaml:"max_threads"`
+	Connections int    `json:"connections" yaml:"connections"`
+	Duration    string `json:"duration" yaml:"duration"`
+	RequestRate int    `json:"request_rate" yaml:"request_rate"`
 }
 
 func main() {
@@ -47,7 +48,7 @@ func main() {
 		&cli.StringFlag{
 			Name:    "file",
 			Aliases: []string{"f"},
-			Usage:   "Select a JSON file to load",
+			Usage:   "Select a JSON or YAML file to load",
 		},
 		&cli.StringFlag{
 			Name:    "data",
@@ -76,7 +77,11 @@ func main() {
 			} else if !c.IsSet("output") {
 				log.Fatal("You did not specify any output file name")
 			} else if c.IsSet("file") {
-				endpointList = parseJSON(c.String("file"))
+				if filepath.Ext(c.String("file")) == ".json" {
+					endpointList = parseJSON(c.String("file"))
+				} else if filepath.Ext(c.String("file")) == ".yml" || filepath.Ext(c.String("file")) == ".yaml" {
+					endpointList = parseYAML(c.String("file"))
+				}
 			} else if c.IsSet("data") {
 				endpointList = parseJSONString(c.String("data"))
 			}
@@ -116,6 +121,25 @@ func parseJSON(file string) []endpointDetails {
 	return temp
 }
 
+func parseYAML(file string) []endpointDetails {
+	yamlFile, err := os.Open(file)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer yamlFile.Close()
+
+	byteValue, err := ioutil.ReadAll(yamlFile)
+	if err != nil {
+		panic(err)
+	}
+	var temp []endpointDetails
+	err = yaml.Unmarshal(byteValue, &temp)
+	if err != nil {
+		panic(err)
+	}
+	return temp
+}
+
 func parseJSONString(value string) []endpointDetails {
 	var temp []endpointDetails
 	err := json.Unmarshal([]byte(value), &temp)
@@ -134,11 +158,31 @@ func (details *endpointDetails) UnmarshalJSON(b []byte) error {
 			Threads:     2,
 			MaxThreads:  2,
 			Connections: 10,
-			Duration:    10,
+			Duration:    "10s",
 			RequestRate: 500,
 		},
 	}
 	if err := json.Unmarshal(b, temp); err != nil {
+		return err
+	}
+	*details = endpointDetails(*temp)
+	return nil
+}
+
+// Override the default YAML unmarshal behavior to set some default query parameters
+// if they are not specified in the input YAML
+func (details *endpointDetails) UnmarshalYAML(node *yaml.Node) error {
+	type tempDetails endpointDetails
+	temp := &tempDetails{
+		Query: endpointQuery{
+			Threads:     2,
+			MaxThreads:  2,
+			Connections: 10,
+			Duration:    "10s",
+			RequestRate: 500,
+		},
+	}
+	if err := node.Decode(temp); err != nil {
 		return err
 	}
 	*details = endpointDetails(*temp)
@@ -150,7 +194,10 @@ func queryAPI(endpoint endpointDetails) string {
 		Freq: endpoint.Query.RequestRate,
 		Per:  time.Second,
 	}
-	duration := endpoint.Query.Duration * time.Second
+	duration, err := time.ParseDuration(endpoint.Query.Duration)
+	if err != nil {
+		log.Fatal(err)
+	}
 	targeter := vegeta.NewStaticTargeter(
 		vegeta.Target{
 			URL:    endpoint.Target.URL,
@@ -171,7 +218,7 @@ func queryAPI(endpoint endpointDetails) string {
 	metrics.Close()
 	reporter := vegeta.NewHDRHistogramPlotReporter(&metrics)
 	buffer := new(bytes.Buffer)
-	reporter(buffer)
+	reporter.Report(buffer)
 	return buffer.String()
 }
 

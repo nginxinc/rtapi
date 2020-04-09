@@ -14,4 +14,5 @@ require (
 	github.com/urfave/cli/v2 v2.1.1
 	golang.org/x/crypto v0.0.0-20191011191535-87dc89f01550 // indirect
 	gonum.org/v1/plot v0.0.0-20200111075622-4abb28f724d5
+	gopkg.in/yaml.v3 v3.0.0-20200313102051-9f266ea9e77c
 )
