@@ -30,6 +30,20 @@ GLOBAL OPTIONS:
 
 ## Sample Input
 
+### Default Values
+
+Only the `target.url` parameter is required. If no method is specified the default is "GET", while in the case of the body and headers these will simply remain empty during the benchmark.
+
+The default `query_parameters` closely follow the default query parameters found in [`wrk2`](https://github.com/giltene/wrk2).
+
+```
+threads: 2
+max_threads: 2
+connections: 10
+duration: 10s
+request_rate: 500
+```
+
 ### JSON
 
 ```json
@@ -72,16 +86,4 @@ GLOBAL OPTIONS:
     connections: 12
     duration: 10s
     request_rate: 500
-```
-
-## Default Query Values
-
-The default query parameters closely follow the default query parameters found in [`wrk2`](https://github.com/giltene/wrk2).
-
-```
-threads: 2
-max_threads: 2
-connections: 10
-duration: 10s
-request_rate: 500
 ```
