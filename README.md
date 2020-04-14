@@ -15,7 +15,7 @@ USAGE:
     rtapi [global options] command [command options] [arguments...]
 
 VERSION:
-    v0.0.1
+    v0.2.0
 
 COMMANDS:
     help, h  Shows a list of commands or help for one command
@@ -24,6 +24,7 @@ GLOBAL OPTIONS:
     --file value, -f value    Select a JSON or YAML file to load
     --data value, -d value    Pass API parameters directly as a JSON string
     --output value, -o value  PDF report file name
+    --print, -p               Print report (default: false)
     --help, -h                show help (default: false)
     --version, -v             print the version (default: false)
 ```

@@ -23,9 +23,9 @@ import (
 )
 
 type endpointDetails struct {
-	Target       endpointTarget `json:"target" yaml:"target"`
-	Query        endpointQuery  `json:"query_parameters" yaml:"query_parameters"`
-	hdrhistogram string
+	Target  endpointTarget `json:"target" yaml:"target"`
+	Query   endpointQuery  `json:"query_parameters" yaml:"query_parameters"`
+	metrics vegeta.Metrics
 }
 
 type endpointTarget struct {
@@ -60,11 +60,16 @@ func main() {
 			Aliases: []string{"o"},
 			Usage:   "PDF report file name",
 		},
+		&cli.BoolFlag{
+			Name:    "print",
+			Aliases: []string{"p"},
+			Usage:   "Print report",
+		},
 	}
 
 	app := &cli.App{
 		Name:    "Real time API latency analyzer",
-		Version: "v0.1.0",
+		Version: "v0.2.0",
 		Usage:   "Create a PDF report and HDR histogram of Your APIs",
 		Flags:   flags,
 		Action: func(c *cli.Context) error {
@@ -74,8 +79,8 @@ func main() {
 				log.Fatal("No data found")
 			} else if c.IsSet("file") && c.IsSet("data") {
 				log.Fatal("Please only use either file or data as your input source")
-			} else if !c.IsSet("output") {
-				log.Fatal("You did not specify any output file name")
+			} else if !c.IsSet("output") && !c.Bool("print") {
+				log.Fatal("You did not specify any type of output")
 			} else if c.IsSet("file") {
 				if filepath.Ext(c.String("file")) == ".json" {
 					endpointList = parseJSON(c.String("file"))
@@ -87,12 +92,16 @@ func main() {
 			}
 			// Query each endpoint specified
 			for i := range endpointList {
-				endpointList[i].hdrhistogram = queryAPI(endpointList[i])
+				endpointList[i].metrics = queryAPI(endpointList[i])
 			}
-			// Create a graph with all the endpoint query results
-			buffer := createGraph(endpointList)
+			// Print text report
+			if c.Bool("print") {
+				printText(endpointList)
+			}
 			// Create a PDF with some informative text and the graph we've just created
-			createPDF(buffer, c.String("output"))
+			if c.IsSet("output") {
+				createPDF(endpointList, c.String("output"))
+			}
 			return nil
 		},
 	}
@@ -189,7 +198,7 @@ func (details *endpointDetails) UnmarshalYAML(node *yaml.Node) error {
 	return nil
 }
 
-func queryAPI(endpoint endpointDetails) string {
+func queryAPI(endpoint endpointDetails) vegeta.Metrics {
 	rate := vegeta.Rate{
 		Freq: endpoint.Query.RequestRate,
 		Per:  time.Second,
@@ -216,68 +225,38 @@ func queryAPI(endpoint endpointDetails) string {
 		metrics.Add(response)
 	}
 	metrics.Close()
-	reporter := vegeta.NewHDRHistogramPlotReporter(&metrics)
-	buffer := new(bytes.Buffer)
-	reporter.Report(buffer)
-	return buffer.String()
+	return metrics
 }
 
-func createGraph(endpoints []endpointDetails) *bytes.Buffer {
-	// Rearrange HdrHistogram data to plottable data
-	var stringArray [][]string
-	var points []plotter.XYs
+func printText(endpoints []endpointDetails) {
+	os.Stdout.Write([]byte("====================================\n"))
+	os.Stdout.Write([]byte("NGINX — Real-Time API Latency Report\n"))
+	os.Stdout.Write([]byte("====================================\n\n"))
+	text := [...]string{
+		"APIs lie at the very heart of modern applications and evolving digital architectures.\n" +
+			"In today’s landscape, where the barrier of switching to a digital competitor is very low,\n" +
+			"it is of the upmost importance for consumers to have positive experiences.\n\n",
+		"Therefore, at NGINX, we define a real-time API as one that can process end-to-end API calls in 30ms or less (see " +
+			"\"https://www.nginx.com/blog/how-real-time-apis-power-our-lives\" for more information).\n\n",
+		"To get started, let’s assess how your API endpoints stack up.\n\n",
+		"Learn more, talk to an NGINX expert, and discover how NGINX can help you on " +
+			"your journey towards real-time APIs at \"https://www.nginx.com/real-time-api\"\n",
+	}
+	os.Stdout.Write([]byte(text[0]))
+	os.Stdout.Write([]byte(text[1]))
+	os.Stdout.Write([]byte(text[2]))
 	for i := range endpoints {
-		stringArray = append(stringArray, strings.Split(endpoints[i].hdrhistogram, "\n")[1:])
-		points = append(points, make(plotter.XYs, len(stringArray[i])-1))
-		for j := range stringArray[i] {
-			values := strings.Fields(stringArray[i][j])
-			if len(values) == 4 {
-				x, err := strconv.ParseFloat(values[3], 64)
-				if err != nil {
-					log.Fatal(err)
-				}
-				y, err := strconv.ParseFloat(values[0], 64)
-				if err != nil {
-					log.Fatal(err)
-				}
-				points[i][j].X = x
-				points[i][j].Y = y
-			}
-		}
+		reporter := vegeta.NewTextReporter(&endpoints[i].metrics)
+		os.Stdout.Write([]byte("------------------------------------\n"))
+		os.Stdout.Write([]byte("API Endpoint: " + endpoints[i].Target.URL + "\n"))
+		os.Stdout.Write([]byte("------------------------------------\n"))
+		reporter.Report(os.Stdout)
+		os.Stdout.Write([]byte("------------------------------------\n\n"))
 	}
-
-	// Create a new graph and populate it with the HdrHistogram data
-	p, err := plot.New()
-	if err != nil {
-		panic(err)
-	}
-	p.X.Label.Text = "Percentile (%)"
-	p.X.Label.TextStyle.Font.Size = 0.5 * vg.Centimeter
-	p.X.Scale = plot.LogScale{}
-	p.X.Tick.Marker = customTicks{}
-	p.Y.Label.Text = "Latency (ms)"
-	p.Y.Label.TextStyle.Font.Size = 0.5 * vg.Centimeter
-	p.Y.Min = 0
-	p.Add(plotter.NewGrid())
-	for i := range points {
-		lpLine, lpPoints, err := plotter.NewLinePoints(points[i])
-		lpLine.Color = plotutil.Color(i)
-		lpLine.Dashes = plotutil.Dashes(i)
-		lpPoints.Color = plotutil.Color(i)
-		lpPoints.Shape = plotutil.Shape(i)
-		p.Add(lpLine, lpPoints)
-		p.Legend.Add(endpoints[i].Target.URL, [2]plot.Thumbnailer{lpLine, lpPoints}[0], [2]plot.Thumbnailer{lpLine, lpPoints}[1])
-		if err != nil {
-			panic(err)
-		}
-	}
-	buffer := new(bytes.Buffer)
-	wrt, err := p.WriterTo(25*vg.Centimeter, 25*vg.Centimeter, "png")
-	wrt.WriteTo(buffer)
-	return buffer
+	os.Stdout.Write([]byte(text[3]))
 }
 
-func createPDF(buffer *bytes.Buffer, output string) {
+func createPDF(endpoints []endpointDetails, output string) {
 	text := [...]string{
 		"<center><b>NGINX — Real-Time API Latency Report</b></center>",
 		"<b>Why API Performance Matters</b>",
@@ -292,12 +271,12 @@ func createPDF(buffer *bytes.Buffer, output string) {
 			"<i><a href=\"https://www.nginx.com/resources/library/idc-report-apis-success-failure-digital-business/\">" +
 			"APIs — The Determining Agents Between Success or Failure of Digital Business</a></i>, " +
 			"over 90% of organizations expect a latency of under 50 milliseconds, " +
-			"while almost 60% expect latency of 20 milliseconds or less. Therefore, we " +
+			"while almost 60% expect latency of 20 milliseconds or less. Therefore, at NGINX we " +
 			"define a <a href=\"https://www.nginx.com/blog/how-real-time-apis-power-our-lives/\">" +
 			"real-time API</a> as one that can process end-to-end API calls in 30ms or less.",
 		"Whether you’re using an API as the interface for microservices deployments, " +
 			"building a revenue stream with an external API, or something totally new, we’re here to help.",
-		"To get started, let’s assess how your APIs stack up.",
+		"To get started, let’s assess how your API endpoints stack up.",
 		"<b>Your API Performance</b>",
 		"We have run a simple HTTP benchmark using the parameters you specified on " +
 			"each of the API endpoints you listed and created an " +
@@ -379,6 +358,8 @@ func createPDF(buffer *bytes.Buffer, output string) {
 	html.Write(lineHt, text[7])
 	pdf.Ln(lineHt + pt)
 
+	// Create a graph with all the endpoint query results
+	buffer := createGraph(endpoints)
 	graph := bytes.NewReader(buffer.Bytes())
 	pdf.RegisterImageOptionsReader("graph", options, graph)
 	pdf.ImageOptions("graph", 45, 0, 120, 120, true, options, 0, "")
@@ -392,6 +373,65 @@ func createPDF(buffer *bytes.Buffer, output string) {
 	if err != nil {
 		log.Fatal(err)
 	}
+}
+
+func createGraph(endpoints []endpointDetails) *bytes.Buffer {
+	// Rearrange HdrHistogram data to plottable data
+	var stringArray [][]string
+	var points []plotter.XYs
+	for i := range endpoints {
+		reporter := vegeta.NewHDRHistogramPlotReporter(&endpoints[i].metrics)
+		buffer := new(bytes.Buffer)
+		reporter.Report(buffer)
+		bufferString := buffer.String()
+		stringArray = append(stringArray, strings.Split(bufferString, "\n")[1:])
+		points = append(points, make(plotter.XYs, len(stringArray[i])-1))
+		for j := range stringArray[i] {
+			values := strings.Fields(stringArray[i][j])
+			if len(values) == 4 {
+				x, err := strconv.ParseFloat(values[3], 64)
+				if err != nil {
+					log.Fatal(err)
+				}
+				y, err := strconv.ParseFloat(values[0], 64)
+				if err != nil {
+					log.Fatal(err)
+				}
+				points[i][j].X = x
+				points[i][j].Y = y
+			}
+		}
+	}
+
+	// Create a new graph and populate it with the HdrHistogram data
+	p, err := plot.New()
+	if err != nil {
+		panic(err)
+	}
+	p.X.Label.Text = "Percentile (%)"
+	p.X.Label.TextStyle.Font.Size = 0.5 * vg.Centimeter
+	p.X.Scale = plot.LogScale{}
+	p.X.Tick.Marker = customTicks{}
+	p.Y.Label.Text = "Latency (ms)"
+	p.Y.Label.TextStyle.Font.Size = 0.5 * vg.Centimeter
+	p.Y.Min = 0
+	p.Add(plotter.NewGrid())
+	for i := range points {
+		lpLine, lpPoints, err := plotter.NewLinePoints(points[i])
+		lpLine.Color = plotutil.Color(i)
+		lpLine.Dashes = plotutil.Dashes(i)
+		lpPoints.Color = plotutil.Color(i)
+		lpPoints.Shape = plotutil.Shape(i)
+		p.Add(lpLine, lpPoints)
+		p.Legend.Add(endpoints[i].Target.URL, [2]plot.Thumbnailer{lpLine, lpPoints}[0], [2]plot.Thumbnailer{lpLine, lpPoints}[1])
+		if err != nil {
+			panic(err)
+		}
+	}
+	buffer := new(bytes.Buffer)
+	wrt, err := p.WriterTo(25*vg.Centimeter, 25*vg.Centimeter, "png")
+	wrt.WriteTo(buffer)
+	return buffer
 }
 
 type customTicks struct{}
