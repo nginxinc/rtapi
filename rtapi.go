@@ -373,6 +373,7 @@ func createPDF(endpoints []endpointDetails, output string) {
 	if err != nil {
 		log.Fatal(err)
 	}
+	os.Stdout.Write([]byte("PDF report generated successfully!\n"))
 }
 
 func createGraph(endpoints []endpointDetails) *bytes.Buffer {
