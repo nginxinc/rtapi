@@ -412,22 +412,39 @@ func createGraph(endpoints []endpointDetails) *bytes.Buffer {
 	p.X.Label.Text = "Percentile (%)"
 	p.X.Label.TextStyle.Font.Size = 0.5 * vg.Centimeter
 	p.X.Scale = plot.LogScale{}
-	p.X.Tick.Marker = customTicks{}
+	p.X.Tick.Marker = customXTicks{}
 	p.Y.Label.Text = "Latency (ms)"
 	p.Y.Label.TextStyle.Font.Size = 0.5 * vg.Centimeter
 	p.Y.Min = 0
+	p.Y.Tick.Marker = customYTicks{}
 	p.Add(plotter.NewGrid())
+	line, err := plotter.NewLine(
+		plotter.XYs{
+			plotter.XY{
+				X: 1,
+				Y: 30,
+			},
+			plotter.XY{
+				X: 10000000,
+				Y: 30,
+			},
+		},
+	)
+	if err != nil {
+		panic(err)
+	}
+	p.Add(line)
 	for i := range points {
 		lpLine, lpPoints, err := plotter.NewLinePoints(points[i])
+		if err != nil {
+			panic(err)
+		}
 		lpLine.Color = plotutil.Color(i)
 		lpLine.Dashes = plotutil.Dashes(i)
 		lpPoints.Color = plotutil.Color(i)
 		lpPoints.Shape = plotutil.Shape(i)
 		p.Add(lpLine, lpPoints)
 		p.Legend.Add(endpoints[i].Target.URL, [2]plot.Thumbnailer{lpLine, lpPoints}[0], [2]plot.Thumbnailer{lpLine, lpPoints}[1])
-		if err != nil {
-			panic(err)
-		}
 	}
 	buffer := new(bytes.Buffer)
 	wrt, err := p.WriterTo(25*vg.Centimeter, 25*vg.Centimeter, "png")
@@ -435,33 +452,64 @@ func createGraph(endpoints []endpointDetails) *bytes.Buffer {
 	return buffer
 }
 
-type customTicks struct{}
+type customXTicks struct{}
 
-func (customTicks) Ticks(min, max float64) []plot.Tick {
+func (customXTicks) Ticks(min, max float64) []plot.Tick {
 	return []plot.Tick{
 		plot.Tick{
-			Value: 1, Label: "0%",
+			Value: 1,
+			Label: "0%",
 		},
 		plot.Tick{
-			Value: 10, Label: "90%",
+			Value: 10,
+			Label: "90%",
 		},
 		plot.Tick{
-			Value: 100, Label: "99%",
+			Value: 100,
+			Label: "99%",
 		},
 		plot.Tick{
-			Value: 1000, Label: "99.9%",
+			Value: 1000,
+			Label: "99.9%",
 		},
 		plot.Tick{
-			Value: 10000, Label: "99.99%",
+			Value: 10000,
+			Label: "99.99%",
 		},
 		plot.Tick{
-			Value: 100000, Label: "99.999%",
+			Value: 100000,
+			Label: "99.999%",
 		},
 		plot.Tick{
-			Value: 1000000, Label: "99.9999%",
+			Value: 1000000,
+			Label: "99.9999%",
 		},
 		plot.Tick{
-			Value: 10000000, Label: "99.99999%",
+			Value: 10000000,
+			Label: "99.99999%",
 		},
 	}
+}
+
+type customYTicks struct{}
+
+func (customYTicks) Ticks(min, max float64) []plot.Tick {
+	ticks := make([]plot.Tick, 0)
+	for i := 0; float64(i) <= max; i += 50 {
+		ticks = append(
+			ticks,
+			plot.Tick{
+				Value: float64(i),
+				Label: strconv.Itoa(i),
+			},
+		)
+	}
+	ticks = append(
+		ticks,
+		plot.Tick{
+			Value: float64(30),
+			Label: strconv.Itoa(30),
+		},
+	)
+	return ticks
 }
