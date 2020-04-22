@@ -5,12 +5,13 @@ import (
 	"encoding/json"
 	"github.com/gobuffalo/packr/v2"
 	"github.com/jung-kurt/gofpdf"
-	"github.com/tsenart/vegeta/lib"
+	"github.com/tsenart/vegeta/v12/lib"
 	"github.com/urfave/cli/v2"
 	"gonum.org/v1/plot"
 	"gonum.org/v1/plot/plotter"
 	"gonum.org/v1/plot/plotutil"
 	"gonum.org/v1/plot/vg"
+	"gonum.org/v1/plot/vg/draw"
 	"gopkg.in/yaml.v3"
 	"io/ioutil"
 	"log"
@@ -271,16 +272,22 @@ func createPDF(endpoints []endpointDetails, output string) {
 			"<i><a href=\"https://www.nginx.com/resources/library/idc-report-apis-success-failure-digital-business/\">" +
 			"APIs — The Determining Agents Between Success or Failure of Digital Business</a></i>, " +
 			"over 90% of organizations expect a latency of under 50 milliseconds, " +
-			"while almost 60% expect latency of 20 milliseconds or less. Therefore, at NGINX we " +
-			"define a <a href=\"https://www.nginx.com/blog/how-real-time-apis-power-our-lives/\">" +
-			"real-time API</a> as one that can process end-to-end API calls in 30ms or less.",
-		"Whether you’re using an API as the interface for microservices deployments, " +
+			"while almost 60% expect latency of 20 milliseconds or less. " +
+			"At NGINX, we’ve used this data, together with some end-to-end analysis of the API lifecycle, " +
+			"to define a <a href=\"https://www.nginx.com/blog/how-real-time-apis-power-our-lives/\">" +
+			"real-time API</a> as one with latency of 30ms or less. " +
+			"(Latency is defined as the amount of time it takes for your API infrastructure " +
+			"to respond to an API call – from the moment a request arrives at the API gateway " +
+			"to when the first byte of a response is returned to the client.)",
+		"So, how do your APIs measure up? Are they already fast enough to be considered real time, " +
+			"or do they need to improve? Does your product feel a bit sluggish, but you can’t quite " +
+			"place why that is? Maybe you don’t know for sure what your API latency looks like? " +
+			"Whether you’re using an API as the interface for microservices deployments, " +
 			"building a revenue stream with an external API, or something totally new, we’re here to help.",
-		"To get started, let’s assess how your API endpoints stack up.",
 		"<b>Your API Performance</b>",
-		"We have run a simple HTTP benchmark using the parameters you specified on " +
-			"each of the API endpoints you listed and created an " +
-			"<a href=\"https://hdrhistogram.github.io/HdrHistogram/\">HDR histogram</a> graph " +
+		"We have run a simple HTTP benchmark using the query parameters you specified on " +
+			"each of the target API endpoints you listed and created an " +
+			"<a href=\"https://hdrhistogram.github.io/HdrHistogram/\">Hdr Histogram</a> graph " +
 			"that shows the latency of your API endpoints. Ideally, the latency at the 99th percentile " +
 			"(<b>99%</b> on the graph) is less than 30ms for your API to be considered real time.",
 		"Is your API’s latency below 30ms? We can help you improve it no matter where it is!",
@@ -331,12 +338,13 @@ func createPDF(endpoints []endpointDetails, output string) {
 	lineHt *= lineSpacing
 	html.Write(lineHt, text[0])
 	pdf.Ln(pt)
-	pdf.SetFontSize(12)
+	pdf.SetFontSize(11)
 	_, lineHt = pdf.GetFontSize()
+	lineSpacing = 1.2
 	lineHt *= lineSpacing
 	html.Write(lineHt, text[1])
 	pdf.Ln(lineHt + pt)
-	pdf.SetFontSize(11)
+	pdf.SetFontSize(10)
 	_, lineHt = pdf.GetFontSize()
 	lineHt *= lineSpacing
 	html.Write(lineHt, text[2])
@@ -345,17 +353,15 @@ func createPDF(endpoints []endpointDetails, output string) {
 	pdf.Ln(lineHt + pt)
 	html.Write(lineHt, text[4])
 	pdf.Ln(lineHt + pt)
-	html.Write(lineHt, text[5])
-	pdf.Ln(lineHt + pt)
-	pdf.SetFontSize(12)
-	_, lineHt = pdf.GetFontSize()
-	lineHt *= lineSpacing
-	html.Write(lineHt, text[6])
-	pdf.Ln(lineHt + pt)
 	pdf.SetFontSize(11)
 	_, lineHt = pdf.GetFontSize()
 	lineHt *= lineSpacing
-	html.Write(lineHt, text[7])
+	html.Write(lineHt, text[5])
+	pdf.Ln(lineHt + pt)
+	pdf.SetFontSize(10)
+	_, lineHt = pdf.GetFontSize()
+	lineHt *= lineSpacing
+	html.Write(lineHt, text[6])
 	pdf.Ln(lineHt + pt)
 
 	// Create a graph with all the endpoint query results
@@ -364,9 +370,9 @@ func createPDF(endpoints []endpointDetails, output string) {
 	pdf.RegisterImageOptionsReader("graph", options, graph)
 	pdf.ImageOptions("graph", 45, 0, 120, 120, true, options, 0, "")
 
-	html.Write(lineHt, text[8])
+	html.Write(lineHt, text[7])
 	pdf.Ln(lineHt + pt)
-	html.Write(lineHt, text[9])
+	html.Write(lineHt, text[8])
 	pdf.Ln(lineHt + pt)
 
 	err = pdf.OutputFileAndClose(output)
@@ -403,22 +409,82 @@ func createGraph(endpoints []endpointDetails) *bytes.Buffer {
 			}
 		}
 	}
-
 	// Create a new graph and populate it with the HdrHistogram data
 	p, err := plot.New()
 	if err != nil {
 		panic(err)
 	}
 	p.X.Label.Text = "Percentile (%)"
-	p.X.Label.TextStyle.Font.Size = 0.5 * vg.Centimeter
+	p.X.Label.TextStyle.Font.Size = vg.Length(15)
 	p.X.Scale = plot.LogScale{}
 	p.X.Tick.Marker = customXTicks{}
 	p.Y.Label.Text = "Latency (ms)"
-	p.Y.Label.TextStyle.Font.Size = 0.5 * vg.Centimeter
+	p.Y.Label.TextStyle.Font.Size = vg.Length(15)
+	p.Y.Label.Padding = vg.Length(-20)
 	p.Y.Min = 0
 	p.Y.Tick.Marker = customYTicks{}
 	p.Add(plotter.NewGrid())
-	line, err := plotter.NewLine(
+
+	// Plot the Hdr Histogram for each API endpoint
+	for i := range points {
+		lpLine, lpPoints, err := plotter.NewLinePoints(points[i])
+		if err != nil {
+			panic(err)
+		}
+		lpLine.Color = plotutil.Color(i + 1)
+		lpLine.Dashes = plotutil.Dashes(i + 1)
+		lpPoints.Color = plotutil.Color(i + 1)
+		lpPoints.Shape = plotutil.Shape(i + 1)
+		p.Add(lpLine, lpPoints)
+		p.Legend.Add(endpoints[i].Target.URL, [2]plot.Thumbnailer{lpLine, lpPoints}[0], [2]plot.Thumbnailer{lpLine, lpPoints}[1])
+	}
+	// Label the latency at 99% for each API endpoint
+	for i := range endpoints {
+		lineX, err := plotter.NewLine(
+			plotter.XYs{
+				plotter.XY{
+					X: p.X.Min,
+					Y: float64(endpoints[i].metrics.Latencies.P99.Milliseconds()),
+				},
+				plotter.XY{
+					X: 100,
+					Y: float64(endpoints[i].metrics.Latencies.P99.Milliseconds()),
+				},
+			},
+		)
+		if err != nil {
+			panic(err)
+		}
+		lineX.LineStyle = draw.LineStyle{
+			Color: plotutil.Color(0),
+			Width: vg.Length(2),
+			Dashes: []vg.Length{
+				vg.Length(4),
+			},
+		}
+		p.Add(lineX)
+
+		labels, err := plotter.NewLabels(
+			plotter.XYLabels{
+				plotter.XYs{
+					plotter.XY{
+						X: 100,
+						Y: float64(endpoints[i].metrics.Latencies.P99.Milliseconds()),
+					},
+				},
+				[]string{strconv.Itoa(int(endpoints[i].metrics.Latencies.P99.Milliseconds())) + "ms @ 99%"},
+			},
+		)
+		if err != nil {
+			panic(err)
+		}
+		labels.TextStyle[0].Color = plotutil.Color(0)
+		labels.TextStyle[0].Font.Size = vg.Length(14)
+		p.Add(labels)
+	}
+
+	// Add a line to highlight the 30ms and 99% thresholds
+	line30ms, err := plotter.NewLine(
 		plotter.XYs{
 			plotter.XY{
 				X: 1,
@@ -433,21 +499,44 @@ func createGraph(endpoints []endpointDetails) *bytes.Buffer {
 	if err != nil {
 		panic(err)
 	}
-	p.Add(line)
-	for i := range points {
-		lpLine, lpPoints, err := plotter.NewLinePoints(points[i])
-		if err != nil {
-			panic(err)
-		}
-		lpLine.Color = plotutil.Color(i)
-		lpLine.Dashes = plotutil.Dashes(i)
-		lpPoints.Color = plotutil.Color(i)
-		lpPoints.Shape = plotutil.Shape(i)
-		p.Add(lpLine, lpPoints)
-		p.Legend.Add(endpoints[i].Target.URL, [2]plot.Thumbnailer{lpLine, lpPoints}[0], [2]plot.Thumbnailer{lpLine, lpPoints}[1])
+	line30ms.LineStyle = draw.LineStyle{
+		Width: vg.Length(1),
+		Dashes: []vg.Length{
+			vg.Length(4),
+		},
+		DashOffs: vg.Length(8),
 	}
+	p.Add(line30ms)
+	line99, err := plotter.NewLine(
+		plotter.XYs{
+			plotter.XY{
+				X: 100,
+				Y: p.Y.Min,
+			},
+			plotter.XY{
+				X: 100,
+				Y: p.Y.Max,
+			},
+		},
+	)
+	if err != nil {
+		panic(err)
+	}
+	line99.LineStyle = draw.LineStyle{
+		Width: vg.Length(1),
+		Dashes: []vg.Length{
+			vg.Length(4),
+		},
+		DashOffs: vg.Length(8),
+	}
+	p.Add(line99)
+
+	// Save the graph data into a buffer
 	buffer := new(bytes.Buffer)
 	wrt, err := p.WriterTo(25*vg.Centimeter, 25*vg.Centimeter, "png")
+	if err != nil {
+		panic(err)
+	}
 	wrt.WriteTo(buffer)
 	return buffer
 }
@@ -500,7 +589,7 @@ func (customYTicks) Ticks(min, max float64) []plot.Tick {
 			ticks,
 			plot.Tick{
 				Value: float64(i),
-				Label: strconv.Itoa(i),
+				Label: strconv.Itoa(i) + "ms",
 			},
 		)
 	}
@@ -508,7 +597,7 @@ func (customYTicks) Ticks(min, max float64) []plot.Tick {
 		ticks,
 		plot.Tick{
 			Value: float64(30),
-			Label: strconv.Itoa(30),
+			Label: "Real-Time -- " + strconv.Itoa(30) + "ms",
 		},
 	)
 	return ticks

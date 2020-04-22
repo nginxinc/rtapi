@@ -3,16 +3,13 @@ module github.com/nginxinc/rtapi
 go 1.13
 
 require (
-	github.com/bmizerany/perks v0.0.0-20141205001514-d9a9656a3a4b // indirect
-	github.com/dgryski/go-gk v0.0.0-20140819190930-201884a44051 // indirect
-	github.com/gobuffalo/packr/v2 v2.7.1
-	github.com/influxdata/tdigest v0.0.1 // indirect
+	github.com/ajstarks/svgo v0.0.0-20200320125537-f189e35d30ca // indirect
+	github.com/gobuffalo/packr/v2 v2.8.0
 	github.com/jung-kurt/gofpdf v1.16.2
-	github.com/mailru/easyjson v0.7.0 // indirect
-	github.com/streadway/quantile v0.0.0-20150917103942-b0c588724d25 // indirect
-	github.com/tsenart/vegeta v12.7.0+incompatible
-	github.com/urfave/cli/v2 v2.1.1
-	golang.org/x/crypto v0.0.0-20191011191535-87dc89f01550 // indirect
-	gonum.org/v1/plot v0.0.0-20200111075622-4abb28f724d5
+	github.com/tsenart/vegeta/v12 v12.8.3
+	github.com/urfave/cli/v2 v2.2.0
+	golang.org/x/image v0.0.0-20200119044424-58c23975cae1 // indirect
+	gonum.org/v1/netlib v0.0.0-20200317120129-c5a04cffd98a // indirect
+	gonum.org/v1/plot v0.7.1-0.20200415083422-475e39bcda54
 	gopkg.in/yaml.v3 v3.0.0-20200313102051-9f266ea9e77c
 )
