@@ -21,10 +21,10 @@ COMMANDS:
     help, h  Shows a list of commands or help for one command
 
 GLOBAL OPTIONS:
-    --file value, -f value    Select a JSON or YAML file to load
-    --data value, -d value    Pass API parameters directly as a JSON string
-    --output value, -o value  PDF report file name
-    --print, -p               Print report (default: false)
+    --file value, -f value    select a JSON or YAML file to load
+    --data value, -d value    input API parameters directly as a JSON string
+    --output value, -o value  output query results in easy to grasp PDF report
+    --print, -p               output technical query results to terminal (default: false)
     --help, -h                show help (default: false)
     --version, -v             print the version (default: false)
 ```

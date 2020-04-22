@@ -49,22 +49,22 @@ func main() {
 		&cli.StringFlag{
 			Name:    "file",
 			Aliases: []string{"f"},
-			Usage:   "Select a JSON or YAML file to load",
+			Usage:   "select a JSON or YAML file to load",
 		},
 		&cli.StringFlag{
 			Name:    "data",
 			Aliases: []string{"d"},
-			Usage:   "Pass API parameters directly as a JSON string",
+			Usage:   "input API parameters directly as a JSON string",
 		},
 		&cli.StringFlag{
 			Name:    "output",
 			Aliases: []string{"o"},
-			Usage:   "PDF report file name",
+			Usage:   "output query results in easy to grasp PDF report",
 		},
 		&cli.BoolFlag{
 			Name:    "print",
 			Aliases: []string{"p"},
-			Usage:   "Print report",
+			Usage:   "output technical query results to terminal",
 		},
 	}
 
