@@ -16,3 +16,7 @@
 
 # Build directories
 build/
+
+# packrd build artifacts
+packrd/
+main-packr.go
