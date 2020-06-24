@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"github.com/gobuffalo/packr/v2"
+	"github.com/gosuri/uiprogress"
 	"github.com/jung-kurt/gofpdf"
 	"github.com/tsenart/vegeta/v12/lib"
 	"github.com/urfave/cli/v2"
@@ -20,6 +21,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -91,6 +93,18 @@ func main() {
 			} else if c.IsSet("data") {
 				endpointList = parseJSONString(c.String("data"))
 			}
+
+			// Show progress bar
+			var sum float64
+			for i := range endpointList {
+				duration, err := time.ParseDuration(endpointList[i].Query.Duration)
+				if err != nil {
+					log.Fatal(err)
+				}
+				sum += duration.Seconds()
+			}
+			go showProgressBar(int(sum))
+
 			// Query each endpoint specified
 			for i := range endpointList {
 				endpointList[i].metrics = queryAPI(endpointList[i])
@@ -380,6 +394,21 @@ func createPDF(endpoints []endpointDetails, output string) {
 		log.Fatal(err)
 	}
 	os.Stdout.Write([]byte("PDF report generated successfully!\n"))
+}
+
+func showProgressBar(sum int) {
+	os.Stdout.Write([]byte("Total " + strconv.Itoa(sum) + " seconds.\n"))
+	uiprogress.Start()
+	var waitGroup sync.WaitGroup
+	progressBar := uiprogress.AddBar(sum * 10).AppendCompleted().PrependElapsed()
+	waitGroup.Add(1)
+	go func() {
+		defer waitGroup.Done()
+		for progressBar.Incr() {
+			time.Sleep(time.Second / 10)
+		}
+	}()
+	waitGroup.Wait()
 }
 
 func createGraph(endpoints []endpointDetails) *bytes.Buffer {
