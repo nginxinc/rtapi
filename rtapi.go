@@ -21,7 +21,6 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
-	"sync"
 	"time"
 )
 
@@ -399,16 +398,10 @@ func createPDF(endpoints []endpointDetails, output string) {
 func showProgressBar(sum int) {
 	os.Stdout.Write([]byte("Total " + strconv.Itoa(sum) + " seconds.\n"))
 	uiprogress.Start()
-	var waitGroup sync.WaitGroup
 	progressBar := uiprogress.AddBar(sum * 10).AppendCompleted().PrependElapsed()
-	waitGroup.Add(1)
-	go func() {
-		defer waitGroup.Done()
-		for progressBar.Incr() {
-			time.Sleep(time.Second / 10)
-		}
-	}()
-	waitGroup.Wait()
+	for progressBar.Incr() {
+		time.Sleep(time.Second / 10)
+	}
 }
 
 func createGraph(endpoints []endpointDetails) *bytes.Buffer {
