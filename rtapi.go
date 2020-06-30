@@ -396,7 +396,7 @@ func createPDF(endpoints []endpointDetails, output string) {
 }
 
 func showProgressBar(sum int) {
-	os.Stdout.Write([]byte("Total " + strconv.Itoa(sum) + " seconds.\n"))
+	os.Stdout.Write([]byte("rtapi will take " + strconv.Itoa(sum)  + " seconds to run\n"))
 	uiprogress.Start()
 	progressBar := uiprogress.AddBar(sum * 10).AppendCompleted().PrependElapsed()
 	for progressBar.Incr() {
