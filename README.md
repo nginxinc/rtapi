@@ -1,5 +1,8 @@
 # Real Time API (RTAPI) Latency Testing Tool
 
+# This repository has been archived. There will likely be no further development on the project and security vulnerabilities may be unaddressed.
+
+
 This tool measures the latency response of a series of API endpoints and creates a PDF report with an HDR histogram of all API endpoints.
 
 ## How to use
